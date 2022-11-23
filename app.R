@@ -10,37 +10,37 @@
 library(shiny)
 library(shinythemes)
 library(Vizumap)
-# library(tidyverse)
-# library(broom)
-# #library(lme4)
-# library(brms)
-# library(ggplot2)
+library(readr)
+library(broom)
+library(lme4)
+library(brms)
+library(ggplot2)
 
 # GRAPH section -------------------------
 
 # set options for plots
-#theme_set(theme_classic())
+theme_set(theme_classic())
 
 # Read in example dataset
- # dekeyser <- read_csv("https://janhove.github.io/visualise_uncertainty/dekeyser2010.csv")
+dekeyser <- read_csv("https://janhove.github.io/visualise_uncertainty/dekeyser2010.csv")
 
 # Draw a scatterplot
- # ggplot(data = dekeyser,
- #        aes(x = AOA,
- #            y = GJT)) +
- #   geom_point(shape = 1) +
- #   xlab("Age of L2 acquisition") +
- #   ylab("L2 grammar test score")
+ ggplot(data = dekeyser,
+        aes(x = AOA,
+            y = GJT)) +
+   geom_point(shape = 1) +
+   xlab("Age of L2 acquisition") +
+   ylab("L2 grammar test score")
 
 # now with uncertainty visualization using geom_smooth
- # linreg <- ggplot(data = dekeyser,
- #        aes(x = AOA,
- #            y = GJT)) +
- #   geom_point(shape = 1) +
- #   # simple linear regression ("lm") with 95% confidence band
- #   geom_smooth(method = "lm") +
- #   xlab("Age of L2 acquisition") +
- #   ylab("L2 grammar test score")
+ linreg <- ggplot(data = dekeyser,
+        aes(x = AOA,
+            y = GJT)) +
+   geom_point(shape = 1) +
+ # simple linear regression ("lm") with 95% confidence band
+ geom_smooth(method = "lm") +
+ xlab("Age of L2 acquisition") +
+ ylab("L2 grammar test score")
 
 
 # MAP section --------------------------------------------
@@ -65,7 +65,7 @@ view(usBivMap)
 
 # generate legend to go with the map above
 usBivKey <- build_bkey(data = poverty, terciles = TRUE)
-view(usBivKey)
+view(usBivKey) 
 
 # final element to put into the plotRender in the server argument below
 usbivplot <- attach_key(usBivMap, usBivKey)
@@ -82,7 +82,9 @@ co_data <- read.uv(data = co_data, estimate = "pov_rate", error = "pov_moe")
 
 # build the glyph map
 usGlyphMapDif <- build_gmap(data = co_data, geoData = co_geo, id = "GEO_ID", size = 70, border = "county", glyph = "semi", palette = "Reds")
-view(usGlyphMapDif)
+
+# final element to put into the plotRender in the server argument below
+usglyphplot <- view(usGlyphMapDif)
 
 #### pixelating map -------------------------
 
@@ -104,7 +106,9 @@ all(ca_data$region %in% pix$region)
 
 # uniform distribution plot
 unifPixMap <- build_pmap(data = ca_data, distribution = "uniform", pixelGeo = pix, id = "region", border = ca_geo)
-view(unifPixMap)
+
+# final element to put into the plotRender in the server argument below
+uspixplot <- view(unifPixMap)
 
 ### exceedance probability map -------------------
 
@@ -129,7 +133,9 @@ pdflist <- list(dist = pd, args = args, th = 30)
 
 # build the map
 usExcMap <- build_emap(data = poverty, pdflist = pdflist, geoData = us_geo, id = "GEO_ID", key_label = "Pr[X > 30]")
-view(usExcMap)
+
+# final element to put into the plotRender in the server argument below
+usexcplot <- view(usExcMap)
 
 # Define UI -------------------------------------------
 ui <- fluidPage(theme=shinytheme("paper"),
@@ -160,7 +166,7 @@ ui <- fluidPage(theme=shinytheme("paper"),
                         mainPanel(
                           selectInput(inputId = "plotType", 
                                       label = "Select plot type", 
-                                      choices = c("Bivariate", "Glyph", "Pixel", "Excedance"), selected = "Bivariate"),
+                                      choices = c("Bivariate", "Glyph", "Pixel", "Exceedance"), selected = "Bivariate"),
                           h3("Bivariate uncertainty map for poverty in USA"),
                           p("The map below shows a map of the USA which displays poverty rates including an uncertainty measure. The coloring scheme is a combination of poverty rates and a margin of error for the poverty estimate. See the quadratic legend."),
                           plotOutput("plot_usmap"),
@@ -173,11 +179,11 @@ ui <- fluidPage(theme=shinytheme("paper"),
                         )),
           
               # page3 'Graphs' content------------------
-              tabPanel( title = "Graphs", value = "tab3"),
-              #           mainPanel(
-              #             h3("Linear regression with 95% confidence interval"),
-              #             plotOutput("plot_linreg")
-              #           )),
+              tabPanel( title = "Graphs", value = "tab3",
+                        mainPanel(
+                          h3("Linear regression with 95% confidence interval"),
+                          plotOutput("plot_linreg")
+                        )),
 
               # page4 'References' content------------------
               tabPanel( title = "References", value = "tab3",
@@ -193,19 +199,19 @@ ui <- fluidPage(theme=shinytheme("paper"),
 # Define server logic ---------------------------
 server <- function(input, output, session) {
           # plot linear regression with uncertainty
-          #output$plot_linreg <- renderPlot(linreg)
+          output$plot_linreg <- renderPlot(linreg)
   
           # plot bivariate us poverty with key
           output$plot_usmap <- renderPlot(usbivplot)
           
           # plot bivariate glyph map
-          output$plot_glyphmap <- renderPlot(view(usGlyphMapDif))
+          output$plot_glyphmap <- renderPlot(usglyphplot)
           
           # plot pixelated map
-          output$plot_pixel <- renderPlot(view(unifPixMap))
+          output$plot_pixel <- renderPlot(uspixplot)
           
           # plot exceedance probability map
-          output$plot_exc <- renderPlot(view(usExcMap))
+          output$plot_exc <- renderPlot(usexcplot)
   
           #handle redirect actionButton
           observeEvent(input$redirect1, {
