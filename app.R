@@ -10,48 +10,50 @@
 library(shiny)
 library(shinythemes)
 library(Vizumap)
-library(tidyverse)
-library(broom)
-library(lme4)
-library(brms)
-library(ggplot2)
+# library(tidyverse)
+# library(broom)
+# #library(lme4)
+# library(brms)
+# library(ggplot2)
 
 # GRAPH section -------------------------
 
-# set options for plots 
-theme_set(theme_classic())
+# set options for plots
+#theme_set(theme_classic())
 
 # Read in example dataset
-dekeyser <- read_csv("https://janhove.github.io/visualise_uncertainty/dekeyser2010.csv")
+ # dekeyser <- read_csv("https://janhove.github.io/visualise_uncertainty/dekeyser2010.csv")
 
 # Draw a scatterplot
-ggplot(data = dekeyser,
-       aes(x = AOA,
-           y = GJT)) +
-  geom_point(shape = 1) +
-  xlab("Age of L2 acquisition") +
-  ylab("L2 grammar test score")
+ # ggplot(data = dekeyser,
+ #        aes(x = AOA,
+ #            y = GJT)) +
+ #   geom_point(shape = 1) +
+ #   xlab("Age of L2 acquisition") +
+ #   ylab("L2 grammar test score")
 
 # now with uncertainty visualization using geom_smooth
-linreg <- ggplot(data = dekeyser,
-       aes(x = AOA,
-           y = GJT)) +
-  geom_point(shape = 1) +
-  # simple linear regression ("lm") with 95% confidence band
-  geom_smooth(method = "lm") +
-  xlab("Age of L2 acquisition") +
-  ylab("L2 grammar test score")
+ # linreg <- ggplot(data = dekeyser,
+ #        aes(x = AOA,
+ #            y = GJT)) +
+ #   geom_point(shape = 1) +
+ #   # simple linear regression ("lm") with 95% confidence band
+ #   geom_smooth(method = "lm") +
+ #   xlab("Age of L2 acquisition") +
+ #   ylab("L2 grammar test score")
 
 
 # MAP section --------------------------------------------
 
 data(us_data)
+head(us_data)
 data(us_geo)
 
 ### biv map --------------------------------------------
 
 # use one of four pre-prepared colour palettes
 cmBivPal <- build_palette(name = "CyanMagenta")
+view(cmBivPal)
 
 # below, read.uv creates a df that is usable to build a map with the function after
 poverty <- read.uv(data = us_data, estimate = "pov_rate", error = "pov_moe")
@@ -64,6 +66,9 @@ view(usBivMap)
 # generate legend to go with the map above
 usBivKey <- build_bkey(data = poverty, terciles = TRUE)
 view(usBivKey)
+
+# final element to put into the plotRender in the server argument below
+usbivplot <- attach_key(usBivMap, usBivKey)
 
 #### glyph map ----------------------
 data(us_data)
@@ -167,14 +172,14 @@ ui <- fluidPage(theme=shinytheme("paper"),
                           plotOutput("plot_exc")
                         )),
           
-              # page2 'Maps' content------------------
-              tabPanel( title = "Graphs", value = "tab3",
-                        mainPanel(
-                          h3("Linear regression with 95% confidence interval"),
-                          plotOutput("plot_linreg")
-                        )),
-              
-              # page3 'References' content------------------
+              # page3 'Graphs' content------------------
+              tabPanel( title = "Graphs", value = "tab3"),
+              #           mainPanel(
+              #             h3("Linear regression with 95% confidence interval"),
+              #             plotOutput("plot_linreg")
+              #           )),
+
+              # page4 'References' content------------------
               tabPanel( title = "References", value = "tab3",
                         mainPanel(
                           h1("Sources"),
@@ -188,10 +193,10 @@ ui <- fluidPage(theme=shinytheme("paper"),
 # Define server logic ---------------------------
 server <- function(input, output, session) {
           # plot linear regression with uncertainty
-          output$plot_linreg <- renderPlot(linreg)
+          #output$plot_linreg <- renderPlot(linreg)
   
           # plot bivariate us poverty with key
-          output$plot_usmap <- renderPlot(attach_key(usBivMap, usBivKey))
+          output$plot_usmap <- renderPlot(usbivplot)
           
           # plot bivariate glyph map
           output$plot_glyphmap <- renderPlot(view(usGlyphMapDif))
